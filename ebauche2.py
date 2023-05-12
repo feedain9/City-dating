@@ -1,4 +1,5 @@
 import random
+import sqlite3
 
 """Point et coefficient de pénalité/gain"""
 point_init = 100.0 #point de départ
@@ -257,15 +258,25 @@ for district in districts:
         diff =  crimeRateLyon - district.crimeRate
         diff = int(diff/0.1)
         current_point += int(coef_crimeRate * diff)
-    
-    print("1ère étape : la sécurité !")
-    sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
-    for i in range(len(sorted_dict)):
-        key, value = sorted_dict[i]
-        if key:
-            print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
-        
-    """1.Comparaison du premier critère idem : la cout du loyer"""
+    dict_point[district.name]=current_point
+
+print("1ère étape : la sécurité !")
+sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
+for i in range(3):
+    key, value = sorted_dict[i]
+    print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")    
+print("-------------------------------------------")
+# print(dict_point)
+# print("-------------------------------------------")
+
+
+for district in districts:
+    if district.name not in dict_point.keys():
+        dict_point[district.name]=point_init
+
+    """Récupération des points actuels selon le nom du quartier"""
+    current_point = dict_point.get(district.name)
+    """2.Comparaison du premier critère idem : la cout du loyer"""
     cost_rent = district.averageRentPricePerM2 * user.desiredSizeM2
     if user.desiredRentPriceMax > cost_rent:
         diff =  user.desiredRentPriceMax - cost_rent
@@ -275,16 +286,27 @@ for district in districts:
         diff =  cost_rent - user.desiredRentPriceMax
         diff = int(diff/50)
         current_point += int(coef_rentPrice * diff)
+    dict_point[district.name]=current_point
     # print(f"Point actuel après premier critère : {current_point}")
     
-    print("2eme étape : le loyer demandé par le client !")
-    sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
-    for i in range(len(sorted_dict)):
-        key, value = sorted_dict[i]
-        if key:
-             print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
+print("2eme étape : le loyer demandé par le client !")
+sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
+for i in range(3):
+    key, value = sorted_dict[i]
+    if key:
+        print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
+print("-------------------------------------------")
+# print(dict_point)
+# print("-------------------------------------------")
 
-    """2.Comparaison du deuxième critère : temps de trajet demandé pour aller au travail"""
+for district in districts:
+    if district.name not in dict_point.keys():
+        dict_point[district.name]=point_init
+
+    """Récupération des points actuels selon le nom du quartier"""
+    current_point = dict_point.get(district.name)
+
+    """3.Comparaison du deuxième critère : temps de trajet demandé pour aller au travail"""
     time_to_go = random.choice([10, 15, 40, 20, 25, 5, 9, 23, 39])
     if user.timeToGoWork > time_to_go:
         diff = user.timeToGoWork - time_to_go
@@ -294,64 +316,64 @@ for district in districts:
         diff = time_to_go - user.timeToGoWork
         diff = int(diff/(0.5*time_to_go))
         current_point += int(coef_retail * diff)
-    
-    print("3eme étape : le temps de trajet demandé !")
-    sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
-    for i in range(len(sorted_dict)):
-        key, value = sorted_dict[i]
-        if key:
-            print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
-
-    # print(f"Point actuel après deuxième critère : {current_point}")
-    
-    """Lister les appartements qui ont le plus de points à ce stade et les afficher"""
-    sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
-    #print(f"sorted_dict: {sorted_dict}")
-    best_district = []
-    for i in range(len(sorted_dict)):
-        key, value = sorted_dict[i]
-        if key:
-            best_district.append(key)
-        print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
-
-
-    """3.Comparaison du troisième critère : proximité avec les commerces"""
-    for districtr in best_district:
-        #proximity_to_retail = random.choice([1, 0.5, 0.7, 2.0, 5.0, 3.4, 1.8, 2.8])
-        appt = dict_appt.get(districtr) 
-        #print(f"appt: {appt}")
-        if appt:
-            for k,v in appt.items():
-                proximity_to_retail = v
-                if user.retailPlace > proximity_to_retail:
-                    diff = user.retailPlace - proximity_to_retail
-                    diff = int(diff/0.05)
-                    current_point -= int(coef_workplace * diff)
-                elif user.retailPlace < proximity_to_retail:
-                    diff = proximity_to_retail-user.retailPlace
-                    diff = int(diff/0.05)
-                    current_point += int(coef_workplace * diff)
-        # for appt in dict_appt:
-        #     proximity_to_retail = appt.retailPlace
-        #     if user.retailPlace > proximity_to_retail:
-        #         diff = user.retailPlace - proximity_to_retail
-        #         diff = int(diff/0.05)
-        #         #print(f"diff: {diff}")
-        #         current_point -= int(coef_workplace * diff)
-        #     elif user.retailPlace < proximity_to_retail:
-        #         diff = proximity_to_retail-user.retailPlace
-        #         diff = int(diff/0.05)
-        #         #print(f"diff: {diff}")
-        #         current_point += int(coef_workplace * diff)
-
-        # print(f"Point actuel après troisième critère : {current_point}")
-    
     dict_point[district.name]=current_point
+    
+print("3eme étape : le temps de trajet demandé !")
+sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
+for i in range(3):
+    key, value = sorted_dict[i]
+    if key:
+        print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
+print("-------------------------------------------")
+#print(dict_point)
+#print("-------------------------------------------")
+    
+"""4.Lister les appartements qui ont le plus de points à ce stade et les afficher"""
+sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
+#print(f"sorted_dict: {sorted_dict}")
+best_district = []
+#print("4eme étape : Lister les appartements qui ont le plus de points à ce stade !")
+for i in range(3):
+    key, value = sorted_dict[i]
+    if key:
+        best_district.append(key)
+    #print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
+#print("-------------------------------------------")
+
+
+"""5.Comparaison du troisième critère : proximité avec les commerces"""
+for districtr in best_district:
+    #proximity_to_retail = random.choice([1, 0.5, 0.7, 2.0, 5.0, 3.4, 1.8, 2.8])
+    appt = dict_appt.get(districtr) 
+    current_point = dict_point.get(district.name)
+    #print(f"appt: {appt}")
+    if appt:
+        for k,v in appt.items():
+            proximity_to_retail = v
+            #print(f"{proximity_to_retail}")
+            if user.retailPlace > proximity_to_retail:
+                diff = user.retailPlace - proximity_to_retail
+                diff = int(diff/0.05)
+                current_point -= int(coef_workplace * diff)
+            elif user.retailPlace < proximity_to_retail:
+                diff = proximity_to_retail-user.retailPlace
+                diff = int(diff/0.05)
+                current_point += int(coef_workplace * diff)
+            #print(f"result: {current_point}")
+    dict_point[district.name]=current_point
+    
 
 # Trie le dictionnaire par ordre décroissant des valeurs
 sorted_dict = sorted(dict_point.items(), key=lambda x: x[1], reverse=True)
 
 # Affiche les trois apparts selon le critère client
+print("4eme étape : Résultat final !")
 for i in range(3):
     key, value = sorted_dict[i]
     print(f"Le {i+1}er quartier recommandé est {key} avec un score de {value}")
+print("-------------------------------------------")
+#print(dict_point)
+
+
+
+
